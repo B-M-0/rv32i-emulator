@@ -32,8 +32,11 @@
         }
     }   
 
+
+ 
+    
     void Core::step() {
-        uint32_t instr = mem[pc - M ]
+        uint32_t instr = mem[pc - MEM_BASE ]
     }
 
 

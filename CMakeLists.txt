@@ -10,7 +10,7 @@ add_executable(rv32i src/main.cpp)
 target_link_libraries(rv32i PRIVATE emu)
 
 enable_testing()
-add_executable(test_decode tests/test_decode.cpp)
+add_executable(test_decode tests/test.cpp)
 target_link_libraries(test_decode PRIVATE emu)
 add_test(NAME decode COMMAND test_decode)
 
