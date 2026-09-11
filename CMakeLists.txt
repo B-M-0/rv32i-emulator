@@ -3,7 +3,10 @@ project(rv32i_emu CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(emu src/decode.cpp)
+add_library(emu 
+src/decode.cpp
+src/Core.cpp
+)
 target_include_directories(emu PUBLIC include)
 
 add_executable(rv32i src/main.cpp)

@@ -1,0 +1,49 @@
+
+   0:   12345537                lui     a0,0x12345
+   4:   fffff537                lui     a0,0xfffff
+   8:   00001597                auipc   a1,0x1
+   c:   0a8000ef                jal     ra,b4 <fwd>
+  10:   ff1ff06f                jal     zero,0 <_start>
+  14:   004500e7                jalr    ra,4(a0) # fffff004 <fwd+0xffffef50>
+  18:   ffc50067                jalr    zero,-4(a0)
+  1c:   08b50c63                beq     a0,a1,b4 <fwd>
+  20:   feb510e3                bne     a0,a1,0 <_start>
+  24:   08b54863                blt     a0,a1,b4 <fwd>
+  28:   fcb55ce3                bge     a0,a1,0 <_start>
+  2c:   08b56463                bltu    a0,a1,b4 <fwd>
+  30:   fcb578e3                bgeu    a0,a1,0 <_start>
+  34:   00010603                lb      a2,0(sp)
+  38:   ffe11603                lh      a2,-2(sp)
+  3c:   00812603                lw      a2,8(sp)
+  40:   00114603                lbu     a2,1(sp)
+  44:   00215603                lhu     a2,2(sp)
+  48:   00c10023                sb      a2,0(sp)
+  4c:   fec11f23                sh      a2,-2(sp)
+  50:   7ec12fa3                sw      a2,2047(sp)
+  54:   00550513                addi    a0,a0,5
+  58:   fff50513                addi    a0,a0,-1
+  5c:   80050513                addi    a0,a0,-2048
+  60:   ff95a513                slti    a0,a1,-7
+  64:   0075b513                sltiu   a0,a1,7
+  68:   fff5c513                xori    a0,a1,-1
+  6c:   7ff5e513                ori     a0,a1,2047
+  70:   0ff5f513                andi    a0,a1,255
+  74:   01f59513                slli    a0,a1,0x1f
+  78:   0015d513                srli    a0,a1,0x1
+  7c:   41f5d513                srai    a0,a1,0x1f
+  80:   00c58533                add     a0,a1,a2
+  84:   40c58533                sub     a0,a1,a2
+  88:   00c59533                sll     a0,a1,a2
+  8c:   00c5a533                slt     a0,a1,a2
+  90:   00c5b533                sltu    a0,a1,a2
+  94:   00c5c533                xor     a0,a1,a2
+  98:   00c5d533                srl     a0,a1,a2
+  9c:   40c5d533                sra     a0,a1,a2
+  a0:   00c5e533                or      a0,a1,a2
+  a4:   00c5f533                and     a0,a1,a2
+  a8:   0ff0000f                fence   iorw,iorw
+  ac:   00000073                ecall
+  b0:   00100073                ebreak
+
+000000b4 <fwd>:
+  b4:   00000013                addi    zero,zero,0

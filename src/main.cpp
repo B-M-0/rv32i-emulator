@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include "Core.h"
+#include "decode.h"
+#include "test.cpp"
 #include <iostream>
 int main()
 {
-	std::cout << "hello world";
+	test();
 	return 0;
 }
