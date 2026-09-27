@@ -226,7 +226,11 @@ void check_vectors(const std::string& filename) {
         else
             counter++;
     }
-    std::cout  << counter << '\\' << total << " tests passed\n";
+    
+    if (counter == total)
+        std::cout << "All tests passed!";
+    else
+        std::cout  << counter << '\\' << total << " tests passed\n";
 }
 
 

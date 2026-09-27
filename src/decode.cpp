@@ -2,12 +2,59 @@
 #include "decode.h"
 
 
-    Instruction decode(uint32_t raw){
+    Instruction decodeInstr(uint32_t raw){
+        Instruction output{};
         uint32_t opcode = opcode_of(raw);
         Op operation = op_of(raw,opcode);
         Format fmt = format_of(opcode);
+
+        output.operation = operation;
+        output.fmt = fmt;
+
         switch(fmt){
+            case Format::R:
+                output.rd     = rd_of(raw);
+                output.rs1    = rs1_of(raw);
+                output.rs2    = rs2_of(raw);
+                output.funct3 = funct3_of(raw);
+                output.funct7 = funct7_of(raw);
+                break;
+            case Format::I:
+                output.rd     = rd_of(raw);
+                output.rs1    = rs1_of(raw);
+                output.funct3 = funct3_of(raw);
+                if (operation == Op::SLLI || operation == Op::SRLI || operation == Op::SRAI) {
+                    // shamt only; upper bits are funct7 (SRAI's 0x20 would otherwise leak into imm)
+                    output.imm    = (int32_t) rs2_of(raw);
+                    output.funct7 = funct7_of(raw);
+                } else {
+                    output.imm = imm_i(raw);
+                }
+                break;
+            case Format::S:
+                output.rs1    = rs1_of(raw);
+                output.rs2    = rs2_of(raw);
+                output.funct3 = funct3_of(raw);
+                output.imm    = imm_s(raw);
+                break;
+            case Format::B:
+                output.rs1    = rs1_of(raw);
+                output.rs2    = rs2_of(raw);
+                output.funct3 = funct3_of(raw);
+                output.imm    = imm_b(raw);
+                break;
+            case Format::U:
+                output.rd  = rd_of(raw);
+                output.imm = imm_u(raw);
+                break;
+            case Format::J:
+                output.rd  = rd_of(raw);
+                output.imm = imm_j(raw);
+                break;
+            case Format::INVALID:
+                break;
         }
+        return output;
     }
     
     // Identifies the encoding variant form the opcode.  
@@ -32,7 +79,7 @@
             case 0x17:
                 return Format::U;
             case 0x6F:
-                return Format::U;
+                return Format::J;
             default:
                 return Format::INVALID;
         }
