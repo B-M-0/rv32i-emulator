@@ -4,6 +4,8 @@
 
     Instruction decodeInstr(uint32_t raw){
         Instruction output{};
+        output.raw = raw;
+        
         uint32_t opcode = opcode_of(raw);
         Op operation = op_of(raw,opcode);
         Format fmt = format_of(opcode);
@@ -69,6 +71,8 @@
             case 0x67:
                 return Format::I;
             case 0x73:
+                return Format::I;
+            case 0x0F:
                 return Format::I;
             case 0x23:
                 return Format::S;
@@ -201,6 +205,17 @@
                         return Op::BLTU;
                     case 0x7:
                         return Op::BGEU;
+                    default:
+                        return Op::INVALID;
+                }
+            case 0b0001111:
+                return funct3 == 0x0 ? Op::FENCE : Op::INVALID;
+            case 0b1110011:
+                switch(raw){
+                    case 0x00000073:
+                        return Op::ECALL;
+                    case 0x00100073:
+                        return Op::EBREAK;
                     default:
                         return Op::INVALID;
                 }

@@ -34,6 +34,8 @@ inline const char* op_names[] = {
 static_assert(std::size(op_names) == static_cast<size_t>(Op::COUNT));
 
 struct  Instruction{
+    uint32_t raw;
+
     Format fmt;
     Op operation;
 

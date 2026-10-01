@@ -1,8 +1,53 @@
 // Core.cpp
 #include "Core.h"
+#include "decode.h"
 
-    
  
+    void execute(Instruction instr)
+    {
+        next_pc = pc+4;
+
+        Op op = instr.operation;
+    
+        int32_t imm = instr.imm;
+
+        uint32_t rd  = instr.rd;
+        uint32_t rs1 = instr.rs1;
+        uint32_t rs2 = instr.rs2;
+
+
+
+        switch(op)
+        {
+            case Op::LUI:
+                x[rd] = imm;
+                break;
+            case Op::AUIPC:
+                x[rd] = pc + imm;
+                break;
+            case Op::FENCE:
+                break;
+            case Op::ECALL:
+                halted = true;
+                break;
+            case Op::EBREAK:
+                halted = true;
+                break;
+            case Op::INVALID:
+               halted = true;
+                std::cerr << std::hex << instr.raw <<  " : " << pc << std::dec << ";  INVALID INSTRUCTION, the decoder didn't recognise this instruction."<< "\n";
+                break;
+            default:
+                halted = true;
+                std::cerr << std::hex << instr.raw <<  " : " << pc << std::dec << ";  UNRECOGNISED OPERATOR, the decoder recognised this instruction, it may not have been implemented in execute yet " <<"\n";
+                break;
+
+
+        }
+        pc = next_pc;
+    }
+
+
     // register access 
     uint32_t Core::read_R(uint32_t address) const {
         return address != 0u ?  x[address] :   0u;
