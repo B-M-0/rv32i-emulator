@@ -3,11 +3,16 @@ project(rv32i_emu CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(emu 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+add_library(emu
 src/decode.cpp
 src/Core.cpp
 )
 target_include_directories(emu PUBLIC include)
+target_compile_options(emu PUBLIC -Wall -Wextra)
 
 add_executable(rv32i src/main.cpp)
 target_link_libraries(rv32i PRIVATE emu)
@@ -15,5 +20,5 @@ target_link_libraries(rv32i PRIVATE emu)
 enable_testing()
 add_executable(test_decode tests/test.cpp)
 target_link_libraries(test_decode PRIVATE emu)
-add_test(NAME decode COMMAND test_decode)
+add_test(NAME decode COMMAND test_decode WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
