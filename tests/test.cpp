@@ -8,6 +8,8 @@
 #include <fstream>
 #include <sstream>
 
+static int total_failures = 0;
+
 
 
 void test_imm_i(){
@@ -30,6 +32,7 @@ void test_imm_i(){
         int32_t case_i = imm_i(test_cases[i]);
         if (case_i != expected[i]) {
             count++;
+            total_failures++;
             failures = failures + std::to_string(i) + "  ";
         }
     }
@@ -61,6 +64,7 @@ void test_imm_s(){
         int32_t case_i = imm_s(test_cases[i]);
         if (case_i != expected[i]) {
             count++;
+            total_failures++;
             failures = failures + std::to_string(i) + "  ";
         }
     }
@@ -91,6 +95,7 @@ void test_imm_j(){
         int32_t case_i = imm_j(test_cases[i]);
         if (case_i != expected[i]) {
             count++;
+            total_failures++;
             failures = failures + std::to_string(i) + "  ";
         }
     }
@@ -125,6 +130,7 @@ void test_imm_b(){
         int32_t case_i = imm_b(test_cases[i]);
         if (case_i != expected[i]) {
             count++;
+            total_failures++;
             failures = failures + std::to_string(i) + "  ";
         }
     }
@@ -157,6 +163,7 @@ void test_imm_u(){
         int32_t case_i = imm_u(test_cases[i]);
         if (case_i != expected[i]) {
             count++;
+            total_failures++;
             failures = failures + std::to_string(i) + "  ";
         }
     }
@@ -190,6 +197,7 @@ void test_extractor_func(std::string function_name,
         auto case_i = f(cases[i].input);
         if (case_i != cases[i].expected) {
             count++;
+            total_failures++;
             failures = failures + std::to_string(i) + "  ";
         }
     }
@@ -204,7 +212,7 @@ void test_extractor_func(std::string function_name,
 
 void check_vectors(const std::string& filename) {
     std::ifstream file(filename);
-    if (!file) { std::cerr << "could not open " << filename << '\n'; return; }
+    if (!file) { std::cerr << "could not open " << filename << '\n'; total_failures++; return; }
     int counter= 0;
     int total = 0;
     std::string line;
@@ -221,14 +229,16 @@ void check_vectors(const std::string& filename) {
 
         std::string expected = op_names[static_cast<std::size_t>(op_of(word, opcode_of(word)))];
         total++;
-        if (expected != mnemonic)
+        if (expected != mnemonic) {
             std::cout << expected<< '\t' << mnemonic << '\n';
+            total_failures++;
+        }
         else
             counter++;
     }
-    
+
     if (counter == total)
-        std::cout << "All tests passed!";
+        std::cout << "All tests passed!\n";
     else
         std::cout  << counter << '\\' << total << " tests passed\n";
 }
@@ -311,5 +321,10 @@ int main(){
     test_extractor_func("funct7", funct7_of, funct7_cases);
 
     check_vectors("rv32all_dump.txt");
+
+    if (total_failures != 0) {
+        std::cout << total_failures << " failure(s)\n";
+        return 1;
+    }
     return 0;
 }
