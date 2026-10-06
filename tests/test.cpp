@@ -116,7 +116,7 @@ void test_imm_b(){
     int test_count = 6;
     std::string failures = "";
 
-    // beq, bne, blt, bge, bltu, bgeu from test.s (B-type section)
+    // beq, bne, blt, bge, bltu, bgeu from tests/decoder/test.s (B-type section)
     std::vector<uint32_t> test_cases = {
         0x00208063,
         0x00209263,
@@ -150,7 +150,7 @@ void test_imm_u(){
     int test_count = 5;
     std::string failures = "";
 
-    // lui x1,0 / lui x1,1 / lui x1,0x12345 / lui x1,0xFFFFF / auipc x1,0x1000 from test.s (U-type section)
+    // lui x1,0 / lui x1,1 / lui x1,0x12345 / lui x1,0xFFFFF / auipc x1,0x1000 from tests/decoder/test.s (U-type section)
     std::vector<uint32_t> test_cases = {
         0x000000B7,
         0x000010B7,
@@ -361,7 +361,7 @@ int main(){
     };
     test_extractor_func("funct7", funct7_of, funct7_cases);
 
-    check_vectors("rv32all_dump.txt");
+    check_vectors("tests/decoder/rv32all_dump.txt");
 
     // register numbers: a0-a7 = x10-x17, s2-s8 = x18-x24
     test_program("tests/programs/alu_r.bin", {

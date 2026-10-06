@@ -157,6 +157,7 @@
         pc = next_pc;
     }
 
+    
     void Core::step() {
         uint32_t at_pc = pc;              // execute() moves pc on, so keep it for the trace
         uint32_t raw   = read_M(pc,4);

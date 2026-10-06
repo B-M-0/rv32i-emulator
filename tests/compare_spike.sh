@@ -22,8 +22,17 @@ for src in "$@"; do
     riscv64-unknown-elf-objcopy -O binary "$tmp/$name.elf" "$tmp/$name.bin"
 
     # emulator: trace lines only, without the final ecall
-    "$EMU" --trace "$tmp/$name.bin" | grep '^core' | sed '$d' > "$tmp/emu.log"
+    "$EMU" --trace "$tmp/$name.bin" |  grep '^core' > "$tmp/emu_full.log"
+    sed '$d' "$tmp/emu_full.log"> "$tmp/emu.log"
     n=$(wc -l < "$tmp/emu.log")
+
+    lastLine=$(tail -n 1 "$tmp/emu_full.log") 
+    if [[ $lastLine != *"0x00000073"* ]]; then
+        echo "$name: emulator did not terminate on ecall"
+        status=1
+        continue
+    fi
+
 
     # Spike: its log goes to stderr. Keep program lines (pc >= 0x80000000), same count.
     timeout 10 spike --isa=rv32i --log-commits "$tmp/$name.elf" 2>&1 >/dev/null \
