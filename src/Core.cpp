@@ -12,18 +12,128 @@
         uint32_t next_pc = pc+4;
         Op op = instr.operation;
     
-        int32_t imm = instr.imm;
+        uint32_t imm = instr.imm;
         uint32_t rd  = instr.rd;
         uint32_t rs1 = instr.rs1;
         uint32_t rs2 = instr.rs2;
+        uint32_t a   = read_R(rs1);
+        uint32_t b   = read_R(rs2);
 
         switch(op)
         {
             case Op::LUI:
-                write_R(rd,imm);
+                write_R(rd, imm);
                 break;
             case Op::AUIPC:
-                write_R(rd,pc + imm);
+                write_R(rd, pc + imm);
+                break;
+            case Op::JAL:
+                write_R(rd, next_pc);
+                pc = pc + imm;
+                return;
+            case Op::JALR:
+                write_R(rd, next_pc);
+                pc = (a + imm) & ~0b1;
+                return;
+            case Op::ADD:
+                write_R(rd, a + b);
+                break;
+            case Op::SUB:
+                write_R(rd, a - b);
+                break;
+            case Op::XOR:
+                write_R(rd, a ^ b);
+                break;
+            case Op::OR:
+                write_R(rd, a | b);
+                break;
+            case Op::AND:
+                write_R(rd, a & b);
+                break;
+            case Op::SLL:
+                write_R(rd, a << (b & 0b11111));
+                break;
+            case Op::SRL:
+                write_R(rd, a >> (b & 0b11111));
+                break;
+            case Op::SRA:
+                write_R(rd, (int32_t) a >> (b & 0b11111));
+                break;
+            case Op::SLT:
+                write_R(rd, (int32_t) a < (int32_t) b ? 0b1 : 0b0);  
+                break;
+            case Op::SLTU:
+                write_R(rd, a <  b ? 0b1 : 0b0);
+                break;
+            case Op::ADDI:
+                write_R(rd, a + imm);
+                break;
+            case Op::XORI:
+                write_R(rd, a ^ imm);
+                break;
+            case Op::ORI:
+                write_R(rd, a | imm);
+                break;
+            case Op::ANDI:
+                write_R(rd, a & imm);
+                break;
+            case Op::SLLI:
+                write_R(rd, a << imm);
+                break;
+            case Op::SRLI:
+                write_R(rd, a >> imm); 
+                break;
+            case Op::SRAI:
+                write_R(rd, (int32_t) a >> imm);
+                break;
+            case Op::SLTI:
+                write_R(rd, (int32_t) a < (int32_t) imm ? 0b1 : 0b0);
+                break;
+            case Op::SLTIU:
+                write_R(rd, a < imm ? 0b1 : 0b0);
+                break;
+            case Op::LB:
+                write_R(rd, (int32_t)((int8_t) read_M(imm + a, 1)));
+                break;
+            case Op::LH:
+                write_R(rd, (int32_t)((int16_t) read_M(imm + a, 2)));
+                break;
+            case Op::LW:
+                write_R(rd, read_M(imm + a, 4));
+                break;
+            case Op::LBU:
+                write_R(rd, read_M(imm + a, 1));
+                break;
+            case Op::LHU:
+                write_R(rd, read_M(imm + a, 2));
+                break;
+            case Op::SB:
+                write_M(imm + a, (int8_t) b,1);
+                break;
+            case Op::SH:
+                write_M(imm + a, (int16_t) b,2);
+                break;
+            case Op::SW:
+                write_M(imm + a, b,4);
+                break;
+            // Branches: taken -> pc + imm, not taken -> fall through to pc + 4.
+            case Op::BEQ:
+                if (a == b) next_pc = pc + imm;
+                break;
+            case Op::BNE:
+                if (a != b) next_pc = pc + imm;
+                break;
+            case Op::BLT:
+                if ((int32_t) a <  (int32_t) b) next_pc = pc + imm;
+                break;
+            case Op::BGE:
+                if ((int32_t) a >= (int32_t) b) next_pc = pc + imm;
+                break;
+            case Op::BLTU:
+                if (a <  b) next_pc = pc + imm;
+                break;
+            case Op::BGEU:
+                if (a >= b) next_pc = pc + imm;
                 break;
             case Op::FENCE:
                 break;
