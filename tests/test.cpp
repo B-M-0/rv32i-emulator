@@ -1,4 +1,5 @@
 #include "decode.h"
+#include "Core.h"
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -244,6 +245,46 @@ void check_vectors(const std::string& filename) {
 }
 
 
+struct reg_case{
+    uint32_t reg;
+    uint32_t expected;
+};
+
+// Runs a test program until it halts, then checks the given registers.
+// Expected values come from the comments in the program's .s file.
+void test_program(const std::string& path, const std::vector<reg_case>& cases){
+    std::cout << "testing (" << path << "):\n";
+
+    Core core;
+    core.load(path);
+    int steps = 0;
+    while (!core.is_halted() && steps < 10000) {   // limit catches infinite loops
+        core.step();
+        steps++;
+    }
+    if (!core.is_halted()) {
+        std::cout << "did not halt within " << steps << " steps\n";
+        total_failures++;
+        return;
+    }
+
+    int count = 0;
+    for (const auto& c : cases) {
+        uint32_t got = core.read_R(c.reg);
+        if (got != c.expected) {
+            count++;
+            total_failures++;
+            std::cout << "  x" << std::dec << c.reg << ": got 0x" << std::hex << got
+                      << ", expected 0x" << c.expected << std::dec << "\n";
+        }
+    }
+    if (count == 0)
+        std::cout << "All tests passed!\n";
+    else
+        std::cout << (cases.size() - count) << " of " << cases.size() << " tests passed\n";
+}
+
+
 int main(){
     test_imm_i();
     test_imm_s();
@@ -321,6 +362,94 @@ int main(){
     test_extractor_func("funct7", funct7_of, funct7_cases);
 
     check_vectors("rv32all_dump.txt");
+
+    // register numbers: a0-a7 = x10-x17, s2-s8 = x18-x24
+    test_program("tests/programs/alu_r.bin", {
+        {10, 0x80000000},   // add  overflow
+        {11, 11},           // sub
+        {12, 0xFFFFFFFE},   // sub  negative result
+        {13, 0x7FFFFFF8},   // and
+        {14, 0xFFFFFFFB},   // or
+        {15, 0x80000007},   // xor
+        {16, 2},            // sll  shift count masked to 5 bits
+        {17, 0xFFFFFFF8},   // sll
+        {18, 0x1FFFFFFF},   // srl
+        {19, 0xFFFFFFFF},   // sra  negative
+        {20, 0x0FFFFFFF},   // sra  positive
+        {21, 1},            // slt  signed
+        {22, 0},            // slt
+        {23, 0},            // sltu unsigned
+        {24, 1},            // sltu
+        {0,  0},            // x0 never changes
+    });
+
+    // a0-a7 = x10-x17, s2-s10 = x18-x26
+    test_program("tests/programs/alu_i.bin", {
+        {10, 4},            // addi negative imm
+        {11, 0x804},        // addi largest imm
+        {12, 0xFFFFF800},   // addi smallest imm, sign-extended
+        {13, 0x80000000},   // addi overflow
+        {14, 1},            // slti signed
+        {15, 0},            // slti
+        {16, 1},            // sltiu imm sign-extended then unsigned
+        {17, 1},            // sltiu seqz
+        {18, 0},            // sltiu equal
+        {19, 0xFFFFFFFA},   // xori -1 (not)
+        {20, 0xFFFFF805},   // ori
+        {21, 0x000007F0},   // andi
+        {22, 0x7FFFF800},   // andi negative imm
+        {23, 0x80000000},   // slli
+        {24, 0x0000000F},   // srli
+        {25, 0xFFFFFFFC},   // srai negative
+        {26, 1},            // srai positive
+    });
+
+    // a0-a7 = x10-x17, s2-s4 = x18-x20
+    test_program("tests/programs/load_store.bin", {
+        {10, 0x8081FF7F},   // lw
+        {11, 0x0000007F},   // lb  positive
+        {12, 0xFFFFFFFF},   // lb  sign-extended
+        {13, 0x000000FF},   // lbu zero-extended
+        {14, 0xFFFF8081},   // lh  sign-extended
+        {15, 0x00008081},   // lhu zero-extended
+        {16, 0xFFFFFF7F},   // lh
+        {17, 0x8081FF7F},   // lw  negative offset
+        {18, 0x5678FF78},   // sb + sh only change their own bytes
+        {19, 0x00000000},   // next word untouched
+        {20, 0x0081FF7F},   // sb zero
+    });
+
+    // 1 = taken, 0 = not taken. a0-a7 = x10-x17, s2-s8 = x18-x24
+    test_program("tests/programs/branch.bin", {
+        {10, 1},            // beq  taken
+        {11, 0},            // beq  not taken
+        {12, 1},            // bne  taken
+        {13, 0},            // bne  not taken
+        {14, 1},            // blt  taken (signed)
+        {15, 0},            // blt  not taken
+        {16, 1},            // bge  taken
+        {17, 1},            // bge  equal
+        {18, 0},            // bge  not taken
+        {19, 1},            // bltu taken (unsigned)
+        {20, 0},            // bltu not taken
+        {21, 1},            // bgeu taken
+        {22, 0},            // bgeu not taken
+        {23, 1},            // bgeu equal
+        {24, 5},            // backward branch loop count
+    });
+
+    // a0-a7 = x10-x17, s2-s4 = x18-x20
+    test_program("tests/programs/jump.bin", {
+        {10, 0},            // jal skipped the instruction
+        {11, 4},            // jal link = pc + 4
+        {12, 0},            // jalr skipped
+        {13, 0},            // jalr skipped
+        {14, 8},            // jalr link = pc + 4, target bit 0 cleared
+        {15, 7},            // backward jal
+        {16, 11},           // call and return
+        {17, 0xFFFFF000},   // lui
+        {20, 0x1004},       // auipc
+    });
 
     if (total_failures != 0) {
         std::cout << total_failures << " failure(s)\n";

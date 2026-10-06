@@ -93,19 +93,19 @@
                 write_R(rd, a < imm ? 0b1 : 0b0);
                 break;
             case Op::LB:
-                write_R(rd, (int32_t)((int8_t) read_M(imm + a, 1)));
+                write_R(rd, (int32_t)((int8_t) load_M(imm + a, 1)));
                 break;
             case Op::LH:
-                write_R(rd, (int32_t)((int16_t) read_M(imm + a, 2)));
+                write_R(rd, (int32_t)((int16_t) load_M(imm + a, 2)));
                 break;
             case Op::LW:
-                write_R(rd, read_M(imm + a, 4));
+                write_R(rd, load_M(imm + a, 4));
                 break;
             case Op::LBU:
-                write_R(rd, read_M(imm + a, 1));
+                write_R(rd, load_M(imm + a, 1));
                 break;
             case Op::LHU:
-                write_R(rd, read_M(imm + a, 2));
+                write_R(rd, load_M(imm + a, 2));
                 break;
             case Op::SB:
                 write_M(imm + a, (int8_t) b,1);
@@ -158,7 +158,36 @@
     }
 
     void Core::step() {
-        execute(decodeInstr(read_M(pc,4)));
+        uint32_t at_pc = pc;              // execute() moves pc on, so keep it for the trace
+        uint32_t raw   = read_M(pc,4);
+        last = {};
+        execute(decodeInstr(raw));
+        if (trace_out) print_trace(at_pc, raw);
+    }
+
+    void Core::set_trace(std::ostream* out) {
+        trace_out = out;
+    }
+
+    // One line per instruction in the same format as Spike's --log-commits,
+    // so the two traces can be compared with diff. e.g.
+    //   core   0: 3 0x80000004 (0x00350593) x11 0x00000008
+    //   core   0: 3 0x80000010 (0x00c12023) mem 0x80001000 0x8081ff7f
+    // "3" is the privilege level: this emulator only has machine mode (3).
+    void Core::print_trace(uint32_t at_pc, uint32_t raw) const {
+        char line[128];
+        int n = std::snprintf(line, sizeof line, "core   0: 3 0x%08x (0x%08x)", at_pc, raw);
+        if (last.reg_write)
+            n += std::snprintf(line + n, sizeof line - n, " x%-2u 0x%08x", last.rd, last.rd_value);
+        if (last.mem_read)
+            n += std::snprintf(line + n, sizeof line - n, " mem 0x%08x", last.load_addr);
+        if (last.mem_write) {
+            // Spike prints only the bytes stored: 2 hex digits for sb, 4 for sh, 8 for sw.
+            uint32_t mask = last.store_width == 4 ? 0xFFFFFFFFu : (1u << (8 * last.store_width)) - 1;
+            std::snprintf(line + n, sizeof line - n, " mem 0x%08x 0x%0*x",
+                          last.store_addr, 2 * last.store_width, last.store_value & mask);
+        }
+        *trace_out << line << "\n";
     }
 
 
@@ -171,8 +200,13 @@
         return idx != 0u ?  x[idx] :   0u;
     }
     void Core::write_R(uint32_t idx, uint32_t value) {
-        if(idx != 0u) x[idx] = value;
-    }   
+        if(idx != 0u) {
+            x[idx] = value;
+            last.reg_write = true;
+            last.rd        = idx;
+            last.rd_value  = value;
+        }
+    }
 
     // memory access
     // width is 1, 2 or 4 bytes, little-endian. Result is zero-extended;
@@ -195,6 +229,20 @@
 
         for(uint32_t i = 0 ; i < width; i++)
             mem[tmp + i] = (uint8_t)((value >> (8*i)) & 0xFF);
+
+        last.mem_write   = true;
+        last.store_addr  = address;
+        last.store_value = value;
+        last.store_width = width;
+    }
+
+    // Same as read_M, but recorded for the trace. Used by load instructions;
+    // instruction fetch uses read_M so it doesn't show up as a data read.
+    uint32_t Core::load_M(uint32_t address, uint8_t width) {
+        uint32_t value = read_M(address, width);
+        last.mem_read  = true;
+        last.load_addr = address;
+        return value;
     }
 
 
